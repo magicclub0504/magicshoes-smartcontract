@@ -1,0 +1,17 @@
+{
+  "name": "magicshoes-smartcontract",
+  "version": "1.0.0",
+  "description": "magicshoes smartcontract",
+  "main": "index.js",
+  "directories": {
+    "test": "test"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Adam Gallery",
+  "license": "ISC",
+  "dependencies": {
+    "@openzeppelin/contracts": "^4.9.1"
+  }
+}

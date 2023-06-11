@@ -47,6 +47,8 @@ contract MCT is ERC20, Ownable {
     mapping(address => uint256) public investment;
     mapping(address => uint256) public investedAt;
 
+    
+
     /*//////////////////////////////////////////////////////////////
                         CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
