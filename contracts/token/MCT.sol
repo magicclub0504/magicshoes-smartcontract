@@ -21,7 +21,7 @@ contract MCT is ERC20, Ownable {
     uint256 public constant OPERATIONAL_POOL_ALLOCATION = 4.2e8 * 1e18;
     uint256 public constant TEAM_ALLOCATION = 4.2e8 * 1e18;
     uint256 public constant INITIAL_SUPPLY_ALLOCATION = 0.6e8 * 1e18;
-     uint256 public constant INVESTOR_ALLOCATION = 1.8e8 * 1e18;
+    uint256 public constant INVESTOR_ALLOCATION = 1.8e8 * 1e18;
 
     // Vesting periods
     uint256 public constant MINING_POOL_VESTING = 520;
