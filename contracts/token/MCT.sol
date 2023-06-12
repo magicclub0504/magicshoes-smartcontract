@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @dev MCT is the governance token contract
 /// @notice fixed supply token
-contract MCT is ERC20, Ownable {
+contract RL13 is ERC20, Ownable {
     uint256 public constant MAX_SUPPLY = 6e9 * 1e18;
     uint256 public immutable START_TIME;
 
@@ -36,7 +36,7 @@ contract MCT is ERC20, Ownable {
     address public constant RESERVE_POOL_RECEIVER = 0xd1e532C785deEC90c1c69c7c5A7DcD28a8f74248;
     address public constant OPERATIONAL_POOL_RECEIVER = 0xA0B9Fe04F0E6E44E42C90CfE30507769E91C1919;
     address public constant TEAM_RECEIVER = 0x8A83d34fa97910B0786d8dAB29C5F3ACA5C1Cc76;
-    address public constant INITIAL_SUPPLY_RECEIVER = 0x8824fE9FA03d3716A762375867FAC2052Cd54A8C;
+        address public constant INITIAL_SUPPLY_RECEIVER = 0x8824fE9FA03d3716A762375867FAC2052Cd54A8C;
     address public constant INVESTOR_POOL_RECEIVER = 0x910bBe8B14dbe813eA3F0e268058b024Bf5301D9;
 
 
@@ -233,38 +233,39 @@ function _claim(
         _mint(to_, amount_);
     }
 
-    function _beforeTokenTransfer(
-        address from,
-        address to,
-        uint256 amount
-    ) internal override {
-        if (from == INVESTOR_POOL_RECEIVER) {
+function _beforeTokenTransfer(
+    address from,
+    address to,
+    uint256 amount
+) internal override {
+    if (from == INVESTOR_POOL_RECEIVER && to != from) {
+        if (isInvestor[to]) {
+            require(investedAt[to] == 0, "MCT: You are already registered as an investor");
+        } else {
             isInvestor[to] = true;
-            if (investedAt[to] == 0) {
-                investedAt[to] = block.timestamp;
-            }
-            investment[to] += amount;
-        }
-
-        if (isInvestor[from]) {
-            uint256 timeDiff = block.timestamp - (investedAt[from] + 26 weeks);
-            uint256 weeksElapsed = timeDiff * 1 weeks / 1 weeks;
-
-            if (weeksElapsed >= 52) {
-                isInvestor[from] = false;
-                investment[from] = 0;
-                investedAt[from] = 0;
-            } else {
-                if (weeksElapsed >= 26 && amount <= balanceOf(from) - investment[from]) {
-                    require(block.timestamp >= investedAt[from] + 26 weeks, "MCT: Lock-in Period");
-                    require(weeksElapsed > 0, "MCT: Vesting Period");
-
-                    uint256 weeklyVesting = investment[from] * (1 weeks) / (52 weeks);
-                    uint256 amountVested = weeklyVesting * weeksElapsed / (1 weeks) ;
-
-                    require(amount <= amountVested, "MCT: Transfer exceeds Vest");
-                }
-            }
+            investedAt[to] = block.timestamp;
         }
     }
+
+    if (isInvestor[from]) {
+        uint256 timeDiff = block.timestamp - (investedAt[from] + 26 weeks);
+        uint256 weeksElapsed = timeDiff * 1 weeks / 1 weeks;
+
+        if (weeksElapsed >= 52) {
+            isInvestor[from] = false;
+            investment[from] = 0;
+            investedAt[from] = 0;
+        } else {
+            if (weeksElapsed >= 26 && weeksElapsed <= 52 && amount <= balanceOf(from) - investment[from]) {
+                require(block.timestamp >= investedAt[from] + 26 weeks, "MCT: The lockdown period has not yet ended");
+                require(weeksElapsed > 0, "MCT: Vesting period is incorrect");
+
+                uint256 weeklyVesting = investment[from] * (1 weeks) / (52 weeks);
+                uint256 amountVested = weeklyVesting * weeksElapsed / (1 weeks) ;
+
+                require(amount <= amountVested, "MCT: Exceeds previously vested amount");
+              }
+          }
+      }
+   }
 }
