@@ -6,7 +6,7 @@ import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /// @dev MCT is the governance token contract
 /// @notice fixed supply token
-contract RL13 is ERC20, Ownable {
+contract MCT is ERC20, Ownable {
     uint256 public constant MAX_SUPPLY = 6e9 * 1e18;
     uint256 public immutable START_TIME;
 
@@ -264,8 +264,8 @@ function _beforeTokenTransfer(
                 uint256 amountVested = weeklyVesting * weeksElapsed / (1 weeks) ;
 
                 require(amount <= amountVested, "MCT: Exceeds previously vested amount");
-              }
-          }
-      }
-   }
+            }
+        }
+    }
+}
 }
