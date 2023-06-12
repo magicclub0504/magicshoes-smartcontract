@@ -219,7 +219,7 @@ function _claim(
         require(weeksElapsed > 0, "MCT: Claim Period Invalid");
 
         uint256 weeklyReward = poolAllocation / vestingPeriod;
-        totalReward = weeksElapsed * weeklyReward / 1 weeks;
+        totalReward = weeksElapsed * weeklyReward;
     }
 
     require(totalReward <= poolAllocation, "MCT: Claim Limit Reached");
@@ -254,7 +254,7 @@ function _beforeTokenTransfer(
 
     if (isInvestor[from]) {
         uint256 timeDiff = block.timestamp - (investedAt[from] + 26 weeks);
-        uint256 weeksElapsed = timeDiff * 1 weeks / 1 weeks;
+        uint256 weeksElapsed = timeDiff / 1 weeks;
 
         if (weeksElapsed >= 52) {
             isInvestor[from] = false;
@@ -265,8 +265,8 @@ function _beforeTokenTransfer(
                 require(block.timestamp >= investedAt[from] + 26 weeks, "MCT: The lockdown period has not yet ended");
                 require(weeksElapsed > 0, "MCT: Vesting period is incorrect");
 
-                uint256 weeklyVesting = investment[from] * (1 weeks) / (52 weeks);
-                uint256 amountVested = weeklyVesting * weeksElapsed / (1 weeks) ;
+                uint256 weeklyVesting = investment[from]  / (52 weeks);
+                uint256 amountVested = weeklyVesting * weeksElapsed;
 
                 require(amount <= amountVested, "MCT: Exceeds previously vested amount");
             }
