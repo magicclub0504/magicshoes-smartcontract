@@ -36,7 +36,7 @@ contract MCT is ERC20, Ownable {
     address public constant RESERVE_POOL_RECEIVER = 0xd1e532C785deEC90c1c69c7c5A7DcD28a8f74248;
     address public constant OPERATIONAL_POOL_RECEIVER = 0xA0B9Fe04F0E6E44E42C90CfE30507769E91C1919;
     address public constant TEAM_RECEIVER = 0x8A83d34fa97910B0786d8dAB29C5F3ACA5C1Cc76;
-        address public constant INITIAL_SUPPLY_RECEIVER = 0x8824fE9FA03d3716A762375867FAC2052Cd54A8C;
+    address public constant INITIAL_SUPPLY_RECEIVER = 0x8824fE9FA03d3716A762375867FAC2052Cd54A8C;
     address public constant INVESTOR_POOL_RECEIVER = 0x910bBe8B14dbe813eA3F0e268058b024Bf5301D9;
 
 
@@ -147,6 +147,7 @@ function approveOperation(uint256 operationId) external onlySigner  {
     operationApprovals[operationKey]++;
 }
 
+
 function executeOperation(uint256 operationId) external onlySigner onlyAfterTimelock(operationId)  {
 
     bytes32 operationKey = bytes32(operationId);
@@ -199,31 +200,35 @@ function _claim(
     uint256 vestingPeriod,
     address receiver
 ) internal {
-    uint256 weeksElapsed;
-    uint256 timeDiff;
 
+    
     require(block.timestamp >= START_TIME + lockIn, "MCT: Lock-in Period");
 
-    if (poolLastClaimTime[poolId] == 0) {
-        timeDiff = block.timestamp - START_TIME;
+    uint256 totalReward;
+    if (poolId == 6 || poolId == 7) {
+        totalReward = poolAllocation;
     } else {
+        uint256 timeDiff;
+        if (poolLastClaimTime[poolId] == 0) {
+            timeDiff = block.timestamp - START_TIME;
+        } else {
             timeDiff = block.timestamp - poolLastClaimTime[poolId];
         }
-
-        weeksElapsed = timeDiff * 1 weeks / 1 weeks;
+        uint256 weeksElapsed = timeDiff / (1 weeks);
 
         require(weeksElapsed > 0, "MCT: Claim Period Invalid");
 
         uint256 weeklyReward = poolAllocation / vestingPeriod;
-        uint256 totalReward = weeksElapsed * weeklyReward;
-        uint256 newClaimedAmount = poolClaimedAmount[poolId] + totalReward;
-        
-        require(newClaimedAmount <= poolAllocation, "MCT: Claim Limit Reached");
-        poolClaimedAmount[poolId] = newClaimedAmount;
-        poolLastClaimTime[poolId] = block.timestamp;
-
-        _mintNow(receiver, totalReward);
+        totalReward = weeksElapsed * weeklyReward / 1 weeks;
     }
+
+    require(totalReward <= poolAllocation, "MCT: Claim Limit Reached");
+
+    poolClaimedAmount[poolId] += totalReward;
+    poolLastClaimTime[poolId] = block.timestamp;
+
+    _mintNow(receiver, totalReward);
+}
 
     function _mintNow(address to_, uint256 amount_) internal {
         require(
