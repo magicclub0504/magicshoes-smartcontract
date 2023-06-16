@@ -1,0 +1,185 @@
+function proposeOperation(uint256 operationId) external onlySigner {
+        bytes32 operationKey = bytes32(operationId);
+        require(
+            !pendingOperations[operationKey],
+            "MCT: Operation already proposed"
+        );
+        pendingOperations[operationKey] = true;
+        operationTimestamps[operationKey] = block.timestamp;
+        operationApprovals[operationKey] = 0;
+    }
+
+    function cancelOperation(uint256 operationId) external onlySigner {
+        bytes32 operationKey = bytes32(operationId);
+        require(pendingOperations[operationKey], "MCT: Operation not proposed");
+        delete pendingOperations[operationKey];
+        delete operationTimestamps[operationKey];
+        delete operationApprovals[operationKey];
+    }
+
+    function approveOperation(uint256 operationId) external onlySigner {
+        bytes32 operationKey = bytes32(operationId);
+        require(pendingOperations[operationKey], "MCT: Operation not proposed");
+        require(
+            operationApprovals[operationKey] < REQUIRED_SIGNATURES,
+            "MCT: Operation already approved"
+        );
+        operationApprovals[operationKey]++;
+    }
+
+    function executeOperation(
+        uint256 operationId
+    ) external onlySigner onlyAfterTimelock(operationId) {
+        bytes32 operationKey = bytes32(operationId);
+        require(pendingOperations[operationKey], "MCT: Operation not proposed");
+        require(
+            operationApprovals[operationKey] >= REQUIRED_SIGNATURES,
+            "MCT: Not enough approvals for operation"
+        );
+
+        delete pendingOperations[operationKey];
+        delete operationTimestamps[operationKey];
+        delete operationApprovals[operationKey];
+
+        if (operationId == 1) {
+            _claim(
+                1,
+                0,
+                MINING_POOL_ALLOCATION,
+                MINING_POOL_VESTING,
+                MINING_POOL_RECEIVER
+            );
+        } else if (operationId == 2) {
+            _claim(
+                2,
+                0,
+                AIRDROP_ALLOCATION,
+                AIRDROP_VESTING,
+                AIRDROP_POOL_RECEIVER
+            );
+        } else if (operationId == 3) {
+            _claim(
+                3,
+                RESERVE_POOL_LOCKUP,
+                RESERVE_POOL_ALLOCATION,
+                RESERVE_POOL_VESTING,
+                RESERVE_POOL_RECEIVER
+            );
+        } else if (operationId == 4) {
+            _claim(
+                4,
+                0,
+                OPERATIONAL_POOL_ALLOCATION,
+                OPERATIONAL_POOL_VESTING,
+                OPERATIONAL_POOL_RECEIVER
+            );
+        } else if (operationId == 5) {
+            _claim(
+                5,
+                TEAM_LOCKUP,
+                TEAM_ALLOCATION,
+                TEAM_VESTING,
+                TEAM_RECEIVER
+            );
+        } else if (operationId == 6) {
+            _claim(6, 0, INITIAL_SUPPLY_ALLOCATION, 1, INITIAL_SUPPLY_RECEIVER);
+        } else if (operationId == 7) {
+            _claim(7, 0, INVESTOR_ALLOCATION, 1, INVESTOR_POOL_RECEIVER);
+        }
+    }
+
+
+     function _claim(
+        uint256 poolId,
+        uint256 lockIn,
+        uint256 poolAllocation,
+        uint256 vestingPeriod,
+        address receiver
+    ) internal {
+        require(block.timestamp >= START_TIME + lockIn, "MCT: Lock-in Period");
+
+        uint256 totalReward;
+        if (poolId == 6 || poolId == 7) {
+            totalReward = poolAllocation;
+        } else {
+            uint256 timeDiff;
+            if (poolLastClaimTime[poolId] == 0) {
+                timeDiff = block.timestamp - START_TIME;
+            } else {
+                timeDiff = block.timestamp - poolLastClaimTime[poolId];
+            }
+            uint256 weeksElapsed = timeDiff / (1 weeks);
+
+            require(weeksElapsed > 0, "MCT: Claim Period Invalid");
+
+            uint256 weeklyReward = poolAllocation / vestingPeriod;
+            totalReward = weeksElapsed * weeklyReward;
+        }
+
+        require(totalReward <= poolAllocation, "MCT: Claim Limit Reached");
+
+        poolClaimedAmount[poolId] += totalReward;
+        poolLastClaimTime[poolId] = block.timestamp;
+
+        _mintNow(receiver, totalReward);
+    }
+
+    function _mintNow(address to_, uint256 amount_) internal {
+        require(
+            totalSupply() + amount_ <= MAX_SUPPLY,
+            "MCT: Max Supply Reached"
+        );
+        _mint(to_, amount_);
+    }
+
+    function _beforeTokenTransfer(
+        address from,
+        address to,
+        uint256 amount
+    ) internal override {
+        if (from == INVESTOR_POOL_RECEIVER && to != from) {
+            if (isInvestor[to]) {
+                require(
+                    investedAt[to] == 0,
+                    "MCT: You are already registered as an investor"
+                );
+            } else {
+                isInvestor[to] = true;
+                investedAt[to] = block.timestamp;
+            }
+        }
+
+        if (isInvestor[from]) {
+            uint256 timeDiff = block.timestamp - (investedAt[from] + 26 weeks);
+            uint256 weeksElapsed = timeDiff / 1 weeks;
+
+            if (weeksElapsed >= 52) {
+                isInvestor[from] = false;
+                investment[from] = 0;
+                investedAt[from] = 0;
+            } else {
+                if (
+                    weeksElapsed >= 26 &&
+                    weeksElapsed <= 52 &&
+                    amount <= balanceOf(from) - investment[from]
+                ) {
+                    require(
+                        block.timestamp >= investedAt[from] + 26 weeks,
+                        "MCT: The lockdown period has not yet ended"
+                    );
+                    require(
+                        weeksElapsed > 0,
+                        "MCT: Vesting period is incorrect"
+                    );
+
+                    uint256 weeklyVesting = investment[from] / (52 weeks);
+                    uint256 amountVested = weeklyVesting * weeksElapsed;
+
+                    require(
+                        amount <= amountVested,
+                        "MCT: Exceeds previously vested amount"
+                    );
+                }
+            }
+        }
+    }
