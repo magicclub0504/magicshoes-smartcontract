@@ -300,9 +300,7 @@ contract MCT is ERC20, Ownable {
             if (poolLastClaimTime[poolId] == 0) {
                 timeDiff = block.timestamp - (START_TIME + lockIn);
             } else {
-                timeDiff =
-                    block.timestamp -
-                    (poolLastClaimTime[poolId] + lockIn);
+                timeDiff = block.timestamp - poolLastClaimTime[poolId];
             }
 
             uint256 weeksElapsed = timeDiff / 1 weeks;
@@ -369,7 +367,7 @@ contract MCT is ERC20, Ownable {
             if (weeksElapsed < 52) {
                 uint256 weeklyVesting = investment[from] / 52;
                 uint256 amountVested = weeksElapsed * weeklyVesting;
-                
+
                 investedAmountTransferred[from] += amount;
                 require(
                     investedAmountTransferred[from] <= amountVested,
