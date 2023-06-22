@@ -289,6 +289,7 @@ contract MCT is ERC20, Ownable {
     ) internal {
         require(block.timestamp > START_TIME + lockIn, "MCT: Lock-in Period");
         uint256 totalReward;
+        uint256 weeksElapsed;
 
         /// @dev pools with no vesting & lockup
         if (poolId == 6 || poolId == 7) {
@@ -303,7 +304,7 @@ contract MCT is ERC20, Ownable {
                 timeDiff = block.timestamp - poolLastClaimTime[poolId];
             }
 
-            uint256 weeksElapsed = timeDiff / 1 weeks;
+            weeksElapsed = timeDiff / 1 weeks;
             require(weeksElapsed > 0, "MCT: Claim Period Invalid");
 
             uint256 weeklyReward = poolAllocation / vestingPeriod;
@@ -320,6 +321,13 @@ contract MCT is ERC20, Ownable {
         );
 
         poolClaimedAmount[poolId] += totalReward;
+
+        if(poolLastClaimTime[poolId] == 0) {
+            poolLastClaimTime[poolId] = START_TIME + lockIn + (weeksElapsed * 1 weeks);
+        } else {
+            poolLastClaimTime[poolId] += weeksElapsed * 1 weeks;
+        }
+        
         poolLastClaimTime[poolId] = block.timestamp;
         _mintNow(receiver, totalReward);
     }
