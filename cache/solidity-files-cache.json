@@ -2,8 +2,8 @@
   "_format": "hh-sol-cache-2",
   "files": {
     "/Users/freelancer/Desktop/magicshoes-smartcontract/contracts/token/MCT.sol": {
-      "lastModificationDate": 1687434454569,
-      "contentHash": "ddbabf6eae24394a68cc0bec9c0acac7",
+      "lastModificationDate": 1687485850375,
+      "contentHash": "cf9581f44715ca29b4f66773d672b12a",
       "sourceName": "contracts/token/MCT.sol",
       "solcConfig": {
         "version": "0.8.17",
@@ -40,6 +40,43 @@
       ],
       "artifacts": [
         "MCT"
+      ]
+    },
+    "/Users/freelancer/Desktop/magicshoes-smartcontract/node_modules/hardhat/console.sol": {
+      "lastModificationDate": 1686907208460,
+      "contentHash": "4ff3cd2f6272c9a6516e9ee4f2b967d3",
+      "sourceName": "hardhat/console.sol",
+      "solcConfig": {
+        "version": "0.8.17",
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 100
+          },
+          "outputSelection": {
+            "*": {
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata",
+                "devdoc",
+                "userdoc"
+              ],
+              "": [
+                "ast"
+              ]
+            }
+          }
+        }
+      },
+      "imports": [],
+      "versionPragmas": [
+        ">= 0.4.22 <0.9.0"
+      ],
+      "artifacts": [
+        "console"
       ]
     },
     "/Users/freelancer/Desktop/magicshoes-smartcontract/node_modules/@openzeppelin/contracts/access/Ownable.sol": {
@@ -233,43 +270,6 @@
       ],
       "artifacts": [
         "IERC20Metadata"
-      ]
-    },
-    "/Users/freelancer/Desktop/magicshoes-smartcontract/node_modules/hardhat/console.sol": {
-      "lastModificationDate": 1686907208460,
-      "contentHash": "4ff3cd2f6272c9a6516e9ee4f2b967d3",
-      "sourceName": "hardhat/console.sol",
-      "solcConfig": {
-        "version": "0.8.17",
-        "settings": {
-          "optimizer": {
-            "enabled": true,
-            "runs": 100
-          },
-          "outputSelection": {
-            "*": {
-              "*": [
-                "abi",
-                "evm.bytecode",
-                "evm.deployedBytecode",
-                "evm.methodIdentifiers",
-                "metadata",
-                "devdoc",
-                "userdoc"
-              ],
-              "": [
-                "ast"
-              ]
-            }
-          }
-        }
-      },
-      "imports": [],
-      "versionPragmas": [
-        ">= 0.4.22 <0.9.0"
-      ],
-      "artifacts": [
-        "console"
       ]
     }
   }

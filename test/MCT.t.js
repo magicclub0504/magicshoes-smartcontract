@@ -68,7 +68,13 @@ describe("MCT Contract Unit Testing", function () {
   });
 
   it("try removing a signer", async function () {
-    await contract.connect(owner).removeSigner(signer3.address);
+    await contract.connect(signer1).removeSigner(signer3.address);
+
+    await contract.connect(signer2).approveOperation(8);
+    await contract.connect(signer1).approveOperation(8);
+    await helpers.time.increase(SECONDS_IN_DAY * 2);
+
+    await contract.connect(signer1).executeOperation(8);
     expect(await contract.isSigner(signer3.address)).to.equals(false);
     expect(await contract.signersCount()).to.equals("2");
   });
