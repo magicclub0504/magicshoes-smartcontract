@@ -61,8 +61,8 @@ contract MCT is ERC20, Ownable {
     mapping(address => uint256) public investedAt;
     mapping(address => uint256) public investedAmountTransferred;
 
+    address private signerToRemove;
     uint256 public signersCount;
-    address[] private signers;
 
     mapping(address => bool) public isSigner;
     mapping(uint256 => bool) private isOperationPending;
@@ -154,16 +154,19 @@ contract MCT is ERC20, Ownable {
         emit NewSignerAdded(newSigner);
     }
 
-    /// @dev allows owner to remove existing signer
-    function removeSigner(address signerToRemove) external onlyOwner {
-        require(isSigner[signerToRemove], "MCT: Signer does not exist");
+    /// @dev allows signer to propose a remove signer operation
+    function removeSigner(address signerToBeRemoved) external onlySigner {
+        uint256 operationId = 8;
         require(
-            --signersCount >= MINIMUM_REQUIRED_SIGNATURES,
-            "MCT: Signers fall below required threshold"
+            !isOperationPending[operationId],
+            "MCT: Operation already proposed"
         );
 
-        isSigner[signerToRemove] = false;
-        emit OldSignerRemoved(signerToRemove);
+        isOperationPending[operationId] = true;
+        operationTimestamp[operationId] = block.timestamp;
+        operationApprovals[operationId] = 0;
+
+        signerToRemove = signerToBeRemoved;
     }
 
     /// @dev allows signer to propose an operation
@@ -171,6 +174,10 @@ contract MCT is ERC20, Ownable {
         require(
             !isOperationPending[operationId],
             "MCT: Operation already proposed"
+        );
+        require(
+            operationId > 0 && operationId <= 7,
+            "MCT: Invalid opeation id"
         );
         isOperationPending[operationId] = true;
         operationTimestamp[operationId] = block.timestamp;
@@ -272,12 +279,53 @@ contract MCT is ERC20, Ownable {
             _claim(6, 0, INITIAL_SUPPLY_ALLOCATION, 1, INITIAL_SUPPLY_RECEIVER);
         } else if (operationId == 7) {
             _claim(7, 0, INVESTOR_ALLOCATION, 1, INVESTOR_POOL_RECEIVER);
+        } else if (operationId == 8) {
+            _removeSigner(signerToRemove);
         }
     }
 
     /*//////////////////////////////////////////////////////////////
                         INTERNAL/HELPER METHODS
     //////////////////////////////////////////////////////////////*/
+
+    /// @dev allows owner to remove existing signer
+    function _removeSigner(address outgoingSigner) internal {
+        require(isSigner[outgoingSigner], "MCT: Signer does not exist");
+        require(
+            --signersCount >= MINIMUM_REQUIRED_SIGNATURES,
+            "MCT: Signers fall below required threshold"
+        );
+
+        /// @dev remove the current valid votes of voter.
+        for (uint256 i = 1; i < 8; i++) {
+            bool isVoter = _findVoter(
+                operationApprovalSigner[i],
+                outgoingSigner
+            );
+
+            if (isVoter) {
+                operationApprovals[i]--;
+            }
+        }
+
+        signerToRemove = address(0);
+        isSigner[outgoingSigner] = false;
+        emit OldSignerRemoved(outgoingSigner);
+    }
+
+    /// @dev parses and array and find if its available
+    function _findVoter(
+        address[] memory votersArray,
+        address voter
+    ) internal pure returns (bool) {
+        for (uint256 j; j < votersArray.length; j++) {
+            if (votersArray[j] == voter) {
+                return true;
+            }
+        }
+
+        return false;
+    }
 
     /// @dev helps to resolve lock-in and vesting before minting tokens
     function _claim(
@@ -322,12 +370,15 @@ contract MCT is ERC20, Ownable {
 
         poolClaimedAmount[poolId] += totalReward;
 
-        if(poolLastClaimTime[poolId] == 0) {
-            poolLastClaimTime[poolId] = START_TIME + lockIn + (weeksElapsed * 1 weeks);
+        if (poolLastClaimTime[poolId] == 0) {
+            poolLastClaimTime[poolId] =
+                START_TIME +
+                lockIn +
+                (weeksElapsed * 1 weeks);
         } else {
             poolLastClaimTime[poolId] += weeksElapsed * 1 weeks;
         }
-        
+
         poolLastClaimTime[poolId] = block.timestamp;
         _mintNow(receiver, totalReward);
     }
